@@ -17,7 +17,7 @@ header {
     padding: 3px;
     text-align: center;
     color: white;
-    height:5vh;
+    height:9vh;
 }
 
 header div.logo {
@@ -30,7 +30,31 @@ header div.logo {
 header div.mainmenu {
     float:left;
     text-align: center;
+    width:60%;
 }
+
+    div.scrollmenu {
+        white-space:nowrap;
+        overflow-y:hidden;
+        overflow-x:scroll;
+        background-color:#333;
+    }
+
+     div.scrollmenu div {
+         display:inline-block;
+         color:white;
+         text-align:center;
+         padding:14px;
+         text-decoration:none;
+     }
+
+      div.scrollmenu div:hover {
+          background-color:#777;
+      }
+
+      div.scrollmenu div.active {
+           background-color:red;
+       }
 
 header div.topaction {
     float:right;
@@ -38,7 +62,7 @@ header div.topaction {
 }
 
 section {
-    height: 88vh;
+    height: 84vh;
 }
 
 section div:first-child {
@@ -62,23 +86,9 @@ section div:last-child {
 
 section div:first-child, section div:last-child {
     /*overflow-y:auto;*/
-    height: 90vh;
+    height: 86vh;
 }
 
-/*@media (max-width: 600px) {
-    section div:first-child, section div:last-child {
-        width: 100%;
-        height: auto;
-    }
-}*/
-
-/*251px*/
-
-/*section:after {
-    content:"";
-    display:table;
-    clear:both;
-}*/
 
 footer {
     background-color: #777;
