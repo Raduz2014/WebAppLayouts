@@ -44,7 +44,6 @@ section {
 section div:first-child {
     float: left;
     width: 251px;
-    /*height: calc(100% - 65px);*/
     background: #ccc;
     padding: 20px;
 }
@@ -59,11 +58,10 @@ section div:last-child {
     padding: 20px;
     width: calc(100% - 251px);
     background-color: #f1f1f1;
-    /*height: calc(100% - 65px);*/
 }
 
 section div:first-child, section div:last-child {
-    overflow-y:auto;
+    /*overflow-y:auto;*/
     height: 90vh;
 }
 
