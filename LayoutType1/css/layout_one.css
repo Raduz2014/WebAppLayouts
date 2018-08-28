@@ -31,9 +31,11 @@ header div.mainmenu {
     float:left;
     text-align: center;
     width:60%;
+    padding:5px 0px;
 }
 
     div.scrollmenu {
+        padding:5px 0px;
         white-space:nowrap;
         overflow-y:hidden;
         overflow-x:scroll;
@@ -46,7 +48,17 @@ header div.mainmenu {
          text-align:center;
          padding:14px;
          text-decoration:none;
+         background-repeat:no-repeat;
+         background-size:contain;
+         background-position: 11px 0px;
+         width:64px;
+         height:42px;
      }
+
+     /*div.scrollmenu div > a > img {
+         width:32px;
+         height:32px;
+     }*/
 
       div.scrollmenu div:hover {
           background-color:#777;
@@ -65,27 +77,51 @@ section {
     height: 84vh;
 }
 
-section div:first-child {
+/*section div:first-child {
+    float: left;
+    width: 251px;
+    background: #ccc;
+    padding: 20px;
+}*/
+
+#leftside-menu {
     float: left;
     width: 251px;
     background: #ccc;
     padding: 20px;
 }
 
-section div:first-child ul {
+#leftside-menu ul {
     list-style-type: none;
     padding: 0;
 }
 
-section div:last-child {
+/*section div:first-child ul {
+    list-style-type: none;
+    padding: 0;
+}*/
+
+/*section div:last-child {
+    float: left;
+    padding: 20px;
+    width: calc(100% - 251px);
+    background-color: #f1f1f1;
+}*/
+
+#main-content {
     float: left;
     padding: 20px;
     width: calc(100% - 251px);
     background-color: #f1f1f1;
 }
 
-section div:first-child, section div:last-child {
-    /*overflow-y:auto;*/
+/*section div:first-child, section div:last-child {
+    overflow-y:auto;
+    height: 86vh;
+}*/
+
+#main-content, #leftside-menu {
+   /*overflow-y:auto;*/
     height: 86vh;
 }
 
