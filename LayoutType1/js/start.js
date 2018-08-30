@@ -75,19 +75,39 @@
         var Modules = {
             'home': function () {
                 console.log("home module")
-                    var mycanvas = document.getElementById("drawarea");
+                var context;
+                var x = 0;
+                var y = 0;
+                var width = 850;
+                var height = 640;
+                var imageObj = new Image();
 
-                    var context = mycanvas.getContext('2d');
-                    var x = 0;
-                    var y = 0;
-                    var width = 850;
-                    var height = 640;
-                    var imageObj = new Image();
+                function InitContext() {
+                    var $canvasDiv = document.querySelector('#canvasdiv');
+                    context = mycanvas.getContext('2d');
+
+
+                    var canvas = document.getElementById("mycanvas");
+                    canvas.height = $canvasDiv.clientHeight;
+                    canvas.width = $canvasDiv.clientWidth;
 
                     imageObj.onload = function () {
                         context.drawImage(imageObj, x, y, width, height);
                     };
                     imageObj.src = '../img/diagrama_zona_1.JPG';
+                }
+
+                InitContext();
+
+                window.addEventListener("resize", resizeCanvas, false);
+
+                function resizeCanvas(e) {
+                    var myCanvas = document.getElementById("mycanvas");
+                    var $canvasDiv = document.querySelector('#canvasdiv');
+
+                    myCanvas.width = $canvasDiv.clientWidth;
+                    myCanvas.height = $canvasDiv.clientHeight;
+                }
 
                     return null
             },
