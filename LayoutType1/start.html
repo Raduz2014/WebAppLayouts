@@ -12,8 +12,8 @@
         <div class="logo">logo</div>
         <div class="mainmenu">
             <div class="scrollmenu">
-                <div id="home" class="menuitem active" style="background-image:url(img/Icons/page_home.png);"></div>
-                <div id="alarm" class="menuitem" style="background-image:url(img/Icons/page_alarm.png);"></div>
+                <div id="home" class="menuitem" style="background-image:url(img/Icons/page_home.png);"></div>
+                <div id="alarm" class="menuitem active" style="background-image:url(img/Icons/page_alarm.png);"></div>
                 <div id="analyse" class="menuitem" style="background-image:url(img/Icons/page_analyse.png);"></div>
                 <div id="device" class="menuitem" style="background-image:url(img/Icons/page_device.png);"></div>
                 <div id="map" class="menuitem" style="background-image:url(img/Icons/page_map.png);"></div>
@@ -32,11 +32,11 @@
             <ul>
                 <li><a href="#">London</a></li>
                 <li><a href="#">Paris</a></li>
-                <li><a href="#">Tokyo</a></li>               
+                <li><a href="#">Tokyo</a></li>
             </ul>
         </div>
         <div id="main-content">
-            <div id="home-page" style="display:block;">
+            <div id="home-page" style="display:none;">
                 <!--<div class="workarea" style="margin:0; border:0; resize:both; overflow:auto; height:200px; width:200px;">
                     <canvas id="drawarea" style="border: 1px solid red; left: 0px; top: 0px;"></canvas>
                 </div>-->
@@ -44,10 +44,17 @@
                     <canvas id="mycanvas" style="border: 1px solid red;"></canvas>
                 </div>
             </div>
-            <div id="alarm-page" style="display:none;">
+            <div id="alarm-page" style="display:block;">
                 <h1>Alarm page</h1>
-                <p>London is the capital city of England. It is the most populous city in the  United Kingdom, with a metropolitan area of over 13 million inhabitants.</p>
-                <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
+                <div id="alarm-container">
+                    <div style="display:block">
+                        <input id="mbusMessages" type="text" value="" />
+                        <input id="btnParseMsg" type="button" value="Parse Response" />
+                    </div>
+                    <div style="display:block">
+                        <textarea id="messageResults" rows="4" cols="50"></textarea>
+                    </div>
+                </div>
             </div>
             <div id="analyse-page" style="display:none;">
                 <h1>Analyse page</h1>
@@ -103,7 +110,7 @@
                 <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
             </div>
         </div>
-        
+
 
     </section>
     <footer>

@@ -81,6 +81,8 @@
                 var width = 850;
                 var height = 640;
                 var imageObj = new Image();
+                imageObj.src = '../img/d.JPG';
+
 
                 function InitContext() {
                     var $canvasDiv = document.querySelector('#canvasdiv');
@@ -92,9 +94,8 @@
                     canvas.width = $canvasDiv.clientWidth;
 
                     imageObj.onload = function () {
-                        context.drawImage(imageObj, x, y, width, height);
+                        context.drawImage(imageObj, x, y, canvas.width, canvas.height);
                     };
-                    imageObj.src = '../img/diagrama_zona_1.JPG';
                 }
 
                 InitContext();
@@ -107,12 +108,159 @@
 
                     myCanvas.width = $canvasDiv.clientWidth;
                     myCanvas.height = $canvasDiv.clientHeight;
+                    context.drawImage(imageObj, x, y, myCanvas.width, myCanvas.height);
+
                 }
 
                     return null
             },
             'alarm': function () {
-                console.log("alarm module")
+                console.log("alarm module");
+
+                function formatHexStr(hexstr) {
+                    var dest = []
+                    for (var xx = 0; xx < hexstr.length; xx++) {
+                        if (xx % 2 === 0) dest.push(hexstr.substr(xx, 2))
+                    }
+                    return dest.join(':');
+                }
+
+                function getBase16Str(dec) {
+                    return dec.toString(16);
+                }
+
+                var inputMbusMsg = document.getElementById("mbusMessages");
+
+                //inputMbusMsg.value = "688e8e6808007200000000824d070e030000000c78724270000f034600451108a75e6f00f7000000f2f4aa901200007f001606a901000027328420083935323938304442373149208d050000000000000080000000808080808080808080fb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cb16";
+                inputMbusMsg.value = "68 56 56 68 08 01 72 23 15 01 09 77 04 14 07 25 00 00 00 0C 78 23 15 01 09 0D 7C 08 44 49 20 2E 74 73 75 63 0A 35 35 37 36 37 30 41 4C 39 30 04 6D 1A 0E CD 13 02 7C 09 65 6D 69 74 20 2E 74 61 62 D4 09 04 13 1F 00 00 00 04 93 7F 00 00 00 00 44 13 1F 00 00 00 0F 00 01 1F A9 16";
+                var btnParse = document.getElementById("btnParseMsg");
+                var logParser = document.getElementById("messageResults");
+
+                document.addEventListener("click", function (e) {
+                    if (e.target.id == "btnParseMsg") {
+
+                        //var arrStr = formatHexStr(inputMbusMsg.value).split(':');
+                        var arrStr = inputMbusMsg.value.split(' ');
+                        
+                        if (arrStr[0] == '68') {
+                            var payloadLen = parseInt(arrStr[1], 16);
+
+                            var payload = arrStr.slice(4, arrStr.length - 2);
+
+                            var crc = arrStr[arrStr.length - 2].toLowerCase();
+
+                            //cslv nre crc of payload
+                            var crcsum = 0;
+                            for (var ii = 0; ii < payload.length; ii++) {
+                                crcsum += parseInt(payload[ii],16)
+                            }
+
+                            var crcsumHexLastOct = crcsum.toString(16).slice(-2);
+                            logParser.value = crcsumHexLastOct;
+
+
+                            if (crc === crcsumHexLastOct) {
+                                //logParser.value = payload;
+
+                                var cfield = parseInt(payload[0],16) & 0xff;
+                                var afield = parseInt(payload[1], 16) & 0xff;
+                                var cifield = parseInt(payload[2], 16) & 0xff;
+
+                                console.log('CField', getBase16Str(cfield));
+                                console.log('AField', getBase16Str(afield));
+                                console.log('CIField', getBase16Str(cifield));
+                                switch (cfield) {
+                                    case 8:
+                                        //RSP_UD
+                                        if (cifield.toString(16) === "72") {
+                                            var dataPayload = payload.splice(3, payload.length)
+                                            
+                                            //process FDH
+                                            var fixDataHeader = dataPayload.splice(0, 12);
+                                            console.log('Activ data fix data header', fixDataHeader);
+
+                                            var mbusIfaceIdNo = fixDataHeader.splice(0, 4);
+                                            var manufactureID = fixDataHeader.splice(0, 2);
+                                            var version = fixDataHeader.splice(0, 1);
+                                            var medium = fixDataHeader.splice(0, 1);
+                                            var accessNo = fixDataHeader.splice(0, 1);
+                                            var mbusIfaceStatus = fixDataHeader.splice(0, 1);
+                                            var signature = fixDataHeader.splice(0, 2);
+
+
+                                            console.log('FDH:>>mbusIfaceIdNo', mbusIfaceIdNo);
+                                            console.log('FDH:>>manufacureID', manufactureID);
+                                            console.log('FDH:>>version', medium);
+                                            console.log('FDH:>>meter medium', accessNo);
+                                            console.log('FDH:>>access no', mbusIfaceStatus);
+                                            console.log('FDH:>>signature', signature);
+
+                                            //process dara records
+                                            console.log('Variable data records', dataPayload);
+
+                                            //DIF
+                                            var dif = parseInt(dataPayload[0], 16);
+
+                                            //exists DIFE byte
+                                            var extbit = dif & 0x80;
+                                            if (extbit == 0) {
+                                                console.log("no Extension bit")
+                                            }
+
+                                            var codigOfData = dif & 0x0f;
+
+                                            switch (codigOfData) {
+                                                case 1:
+                                                    console.log("8 bit Integer");
+                                                    break;
+                                                case 2:
+                                                    console.log("16 bit Integer");
+                                                    break;
+                                                case 3:
+                                                    console.log("24 bit Integer");
+                                                    break;
+                                                case 4:
+                                                    console.log("32 bit Integer");
+                                                    break;
+                                                case 8:
+                                                    console.log("48 bit Integer");
+                                                    break;
+                                                case 9:
+                                                    console.log("64 bit Integer");
+                                                    break;
+                                                case 12:
+                                                    console.log("8 digit BCD");
+                                                    break;
+                                                case 13:
+                                                    console.log("Variable length");
+                                                    break;
+                                            }
+
+                                            //var dif = dif & 0x80;
+                                            console.log('DIF', codigOfData.toString(2));
+
+                                            logParser.value = dataPayload;
+
+                                        }
+                                        break;
+                                }
+
+                                
+                            }
+                            else {
+                                logParser.value = "CRC is not the same";
+                            }
+
+
+
+                        }
+
+                        
+
+                        //logParser.value = formatHexStr(inputMbusMsg.value);
+                    }
+                    e.stopPropagation();
+                });
 
                 return null;
             },
