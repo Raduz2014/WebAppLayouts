@@ -1,4 +1,40 @@
-﻿var callback = function () {
+﻿var myutils = (function () {
+    function byteArrayToLong(/*byte[]*/byteArray) {
+        var value = 0;
+        for (var i = byteArray.length - 1; i >= 0; i--) {
+            value = (value * 256) + byteArray[i];
+        }
+
+        return value;
+    }
+
+    function longToByteArray(/*long*/long) {
+        // we want to represent the input as a 8-bytes array
+        var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+
+        for (var index = 0; index < byteArray.length; index++) {
+            var byte = long & 0xff;
+            byteArray[index] = byte;
+            long = (long - byte) / 256;
+        }
+
+        return byteArray;
+    }
+
+    function decode_manufacture(m_id) {
+        return String.fromCharCode(((m_id >> 10) & 0x001F) + 64) +
+               String.fromCharCode(((m_id >> 5) & 0x001F) + 64) +
+               String.fromCharCode(((m_id) & 0x001F) + 64);
+    }
+
+    return {
+        byteArrayToLong: byteArrayToLong,
+        longToByteArray: longToByteArray,
+        decode_manufacture: decode_manufacture,
+    }
+})();
+
+var callback = function () {
     var menuItems = document.querySelector(".scrollmenu");
     menuItems.addEventListener("click", menuClickEvent, false);
 
@@ -167,12 +203,20 @@
 
                     payload: [],
                     init: function (mbusmsg) {
-                        this.messageStrHex = mbusmsg
+                        if (mbusmsg.length == 1) {
+                            var aaa = [];
+                            if (mbusmsg[0].length % 2 === 0) {
+                                for (var xx = 0 ; xx < mbusmsg[0].length; xx++) {
+                                    if (xx % 2 === 0) {
+                                        aaa.push(mbusmsg[0].substr(xx,2));
+                                    }
+                                }
+                                this.messageStrHex = aaa;
+                                console.log(this.messageStrHex)
 
-                        var ii, lenMsg = this.messageStrHex.length;
-                        for (ii = 0; ii < lenMsg; ii++) {
-                            this.messageBytes.push(parseInt(this.messageStrHex[ii], 16));
+                            }
                         }
+                        else { this.messageStrHex = mbusmsg }
                         return this;
                     },
                     validate: function(){
@@ -217,7 +261,7 @@
 
                             return idNo;
                         }
-                    },
+                    },                    
 
                     parse: function(){
                         console.log(this.messageStrHex)
@@ -248,7 +292,10 @@
 
                                 if (this.MbusData.body.header.type === "0x72") {
                                     this.MbusData.body.header.identification = this.messageStrHex.slice(7, 11).reverse().map(function (it) { return "0x" + it });
-                                    this.MbusData.body.header.manufacturer = this.messageStrHex.slice(11, 13);
+                                    var byteArray = this.messageStrHex.slice(11, 13).map(function (d) { return parseInt(d, 16) })
+
+                                    var IDNo = myutils.byteArrayToLong(byteArray);
+                                    this.MbusData.body.header.manufacturer = myutils.decode_manufacture(IDNo);
                                     this.MbusData.body.header.version = "0x"+this.messageStrHex[13];
                                     this.MbusData.body.header.medium = "0x" + this.messageStrHex[14];
                                     this.MbusData.body.header.access_no = parseInt(this.messageStrHex[15], 16);
