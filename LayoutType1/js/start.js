@@ -1,4 +1,53 @@
-﻿var myutils = (function () {
+﻿var Consts = {
+    //FRAME types
+    MBUS_FRAME_TYPE_ANY : 0x00,
+    MBUS_FRAME_TYPE_ACK : 0x01,
+    MBUS_FRAME_TYPE_SHORT : 0x02,
+    MBUS_FRAME_TYPE_CONTROL : 0x03,
+    MBUS_FRAME_TYPE_LONG : 0x04,
+
+    //DATA RECORDS
+    MBUS_DIB_DIF_WITHOUT_EXTENSION: 0x7F,
+    MBUS_DIB_DIF_EXTENSION_BIT: 0x80,
+    MBUS_DIB_VIF_WITHOUT_EXTENSION: 0x7F,
+    MBUS_DIB_VIF_EXTENSION_BIT: 0x80,
+    MBUS_DIB_DIF_MANUFACTURER_SPECIFIC: 0x0F,
+    MBUS_DIB_DIF_MORE_RECORDS_FOLLOW: 0x1F,
+    MBUS_DIB_DIF_IDLE_FILLER: 0x2F,
+
+    MBUS_DATA_RECORD_DIF_MASK_INST: 0x00,
+    MBUS_DATA_RECORD_DIF_MASK_MIN: 0x10,
+    MBUS_DATA_RECORD_DIF_MASK_TYPE_INT32: 0x04,
+    MBUS_DATA_RECORD_DIF_MASK_DATA: 0x0F,
+    MBUS_DATA_RECORD_DIF_MASK_FUNCTION: 0x30,
+    MBUS_DATA_RECORD_DIF_MASK_STORAGE_NO: 0x40,
+    MBUS_DATA_RECORD_DIF_MASK_EXTENTION: 0x80,
+    MBUS_DATA_RECORD_DIF_MASK_NON_DATA: 0xF0,
+
+    MBUS_DATA_RECORD_DIFE_MASK_STORAGE_NO: 0x0F,
+    MBUS_DATA_RECORD_DIFE_MASK_TARIFF: 0x30,
+    MBUS_DATA_RECORD_DIFE_MASK_DEVICE: 0x40,
+    MBUS_DATA_RECORD_DIFE_MASK_EXTENSION: 0x80,
+
+    //VARIABLE DATA FLAGS
+    MBUS_FRAME_DATA_LENGTH: 252,
+    MBUS_DATA_VARIABLE_HEADER_LENGTH: 12,
+
+    //Frame start/stop bits
+    MBUS_FRAME_ACK_START : 0xE5,
+    MBUS_FRAME_SHORT_START : 0x10,
+    MBUS_FRAME_CONTROL_START : 0x68,
+    MBUS_FRAME_LONG_START : 0x68,
+    MBUS_FRAME_STOP : 0x16,
+
+    //Control fields
+    MBUS_CONTROL_MASK_DIR : 0x40,
+    MBUS_CONTROL_MASK_DIR_M2S : 0x40,
+    MBUS_CONTROL_MASK_DIR_S2M: 0x00,
+    MBUS_CONTROL_INFO_RESP_VARIABLE: 0x72,
+    MBUS_CONTROL_INFO_RESP_VARIABLE_MSB: 0x76,
+}
+var myutils = (function () {
     function byteArrayToLong(/*byte[]*/byteArray) {
         var value = 0;
         for (var i = byteArray.length - 1; i >= 0; i--) {
@@ -170,6 +219,8 @@ var callback = function () {
                 var MBusParser = {
                     messageStrHex: [],
                     messageBytes: [],
+                    data_size: 0,
+                    data_block:[],
                     MbusData: {
                         body: {
                             header: {
@@ -191,6 +242,22 @@ var callback = function () {
                             length: "",
                             start: "",
                             stop: "",
+                        }
+                    },
+
+                    drh:{
+                        dib: {
+                            dif: {
+                                extBit: 0,
+                                lsbStorageNo: 0,
+                                FuncField: 0,
+                                DataField:0
+                            },
+                            dife: "0x00",
+                        },
+                        vib: {
+                            vif: "0x00",
+                            vife: "0x00"
                         }
                     },
 
@@ -219,17 +286,23 @@ var callback = function () {
                         else { this.messageStrHex = mbusmsg }
                         return this;
                     },
-                    validate: function(){
-                        var crcsum = 0;
-                        for (var ii = 0; ii < this.payload.length; ii++) {
-                            crcsum += parseInt(this.payload[ii],16)
-                        }
-                        var crcSumHex = crcsum.toString(16).slice(-2).toLowerCase();
+                    validate: function () {
+                        var frmLen1 = this.messageStrHex[1];
+                        var frmLen2 = this.messageStrHex[2];
+                        if (frmLen1 === frmLen2) {
+                            //we have a valid mbus telegram and next check the crc
+                            var crcsum = 0;
+                            for (var ii = 0; ii < this.payload.length; ii++) {
+                                crcsum += parseInt(this.payload[ii], 16)
+                            }
+                            var crcSumHex = crcsum.toString(16).slice(-2).toLowerCase();
 
-                        var frameCRC = this.messageStrHex[this.messageStrHex.length - 2].toLowerCase();
-                        if (crcSumHex === frameCRC) {
-                            return true;
+                            var frameCRC = this.messageStrHex[this.messageStrHex.length - 2].toLowerCase();
+                            if (crcSumHex === frameCRC) {
+                                return true;
+                            }
                         }
+                       
                         return false;
                     },
 
@@ -264,7 +337,8 @@ var callback = function () {
                     },                    
 
                     parse: function(){
-                        console.log(this.messageStrHex)
+                        console.log(this.messageStrHex);
+                       
 
                         if (this.messageStrHex[0] === '68') {
                             //We have a LongFrame type
@@ -287,20 +361,30 @@ var callback = function () {
                                 this.MbusData.body.header.medium = ''
                                 this.MbusData.body.header.sign = ''
                                 this.MbusData.body.header.status = ''
-                                this.MbusData.body.header.type = "0x" + this.messageStrHex[6];
-                                this.MbusData.body.header.version = ''
+                                this.MbusData.body.header.type = "0x" + this.messageStrHex[6];                                
 
                                 if (this.MbusData.body.header.type === "0x72") {
-                                    this.MbusData.body.header.identification = this.messageStrHex.slice(7, 11).reverse().map(function (it) { return "0x" + it });
-                                    var byteArray = this.messageStrHex.slice(11, 13).map(function (d) { return parseInt(d, 16) })
+                                    this.data_size = parseInt(this.messageStrHex[1], 16)-3;
 
-                                    var IDNo = myutils.byteArrayToLong(byteArray);
-                                    this.MbusData.body.header.manufacturer = myutils.decode_manufacture(IDNo);
-                                    this.MbusData.body.header.version = "0x"+this.messageStrHex[13];
-                                    this.MbusData.body.header.medium = "0x" + this.messageStrHex[14];
-                                    this.MbusData.body.header.access_no = parseInt(this.messageStrHex[15], 16);
-                                    this.MbusData.body.header.status = "0x" + this.messageStrHex[16];
-                                    this.MbusData.body.header.sign = this.messageStrHex.slice(16, 18).map(function (it) { return "0x" + it });
+                                    //if (this.data_block.length > Consts.MBUS_DATA_VARIABLE_HEADER_LENGTH) {
+                                        this.MbusData.body.header.identification = this.messageStrHex.slice(7, 11).reverse().map(function (it) { return "0x" + it });
+                                        var byteArray = this.messageStrHex.slice(11, 13).map(function (d) { return parseInt(d, 16) })
+                                        var IDNo = myutils.byteArrayToLong(byteArray);
+                                        this.MbusData.body.header.manufacturer = myutils.decode_manufacture(IDNo);
+                                        this.MbusData.body.header.version = "0x" + this.messageStrHex[13];
+                                        this.MbusData.body.header.medium = "0x" + this.messageStrHex[14];
+                                        this.MbusData.body.header.access_no = parseInt(this.messageStrHex[15], 16);
+                                        this.MbusData.body.header.status = "0x" + this.messageStrHex[16];
+                                        this.MbusData.body.header.sign = this.messageStrHex.slice(16, 18).map(function (it) { return "0x" + it });
+                                    this.data_block = this.messageStrHex.slice(19, -2);
+
+                                    var lenUserData = this.data_block.length;
+                                    var kDataBlock_Counter = lenUserData;
+                                    for (var jj = 0; jj < lenUserData; jj++) {
+
+                                    }
+                                    
+                                    console.log("data_block", this.data_block)
                                 }
                                 //if (this.cField == "08") {
                                 //    //we have a response frame: RSP_UD
