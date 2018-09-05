@@ -6,6 +6,21 @@
     MBUS_FRAME_TYPE_CONTROL : 0x03,
     MBUS_FRAME_TYPE_LONG : 0x04,
 
+    MBUS_FRAME_ACK_BASE_SIZE           : 1,
+    MBUS_FRAME_SHORT_BASE_SIZE         : 5,
+    MBUS_FRAME_CONTROL_BASE_SIZE       : 9,
+    MBUS_FRAME_LONG_BASE_SIZE          : 9,
+
+    MBUS_FRAME_BASE_SIZE_ACK           : 1,
+    MBUS_FRAME_BASE_SIZE_SHORT         : 5,
+    MBUS_FRAME_BASE_SIZE_CONTROL       : 9,
+    MBUS_FRAME_BASE_SIZE_LONG          : 9,
+
+    MBUS_FRAME_FIXED_SIZE_ACK          : 1,
+    MBUS_FRAME_FIXED_SIZE_SHORT        : 5,
+    MBUS_FRAME_FIXED_SIZE_CONTROL      : 6,
+    MBUS_FRAME_FIXED_SIZE_LONG         : 6,
+
     //DATA RECORDS
     MBUS_DIB_DIF_WITHOUT_EXTENSION: 0x7F,
     MBUS_DIB_DIF_EXTENSION_BIT: 0x80,
@@ -46,7 +61,427 @@
     MBUS_CONTROL_MASK_DIR_S2M: 0x00,
     MBUS_CONTROL_INFO_RESP_VARIABLE: 0x72,
     MBUS_CONTROL_INFO_RESP_VARIABLE_MSB: 0x76,
+
+    MBUS_DATA_FIXED_LENGTH  : 16,
+    MBUS_DATA_TYPE_FIXED	: 1,
+    MBUS_DATA_TYPE_VARIABLE	: 2,
+    MBUS_DATA_TYPE_ERROR	: 3
 }
+
+var MBusTelegram = {
+    type: null,
+    base_size: null,
+    start1: 0,
+    length1: 0,
+    length2: 0,
+    start2: 0,
+    control: 0,
+    address: 0,
+    control_information: 0,
+    //variable data field
+    checksum: 0,
+    stop: 0,
+    data_size: 0,
+    data: [],
+    records: [],
+    data_record_decode: function (record) {
+        var vif  = record.drh['vib'].vif & Consts.MBUS_DIB_VIF_WITHOUT_EXTENSION
+        var vife = 0
+        try{
+            vife = record.drh['vib'].vife[0] & Consts.MBUS_DIB_VIF_WITHOUT_EXTENSION
+        } catch (err) { }
+
+        console.log("record.drh['dib'].dif", record.drh['dib'].dif.toString(16));
+
+        switch (record.drh['dib'].dif & Consts.MBUS_DATA_RECORD_DIF_MASK_DATA) {
+            case 0x00: //no data
+                return "";
+            case 0x01: //1 byte integer (8 bit)
+                return this.int_decode(record.data);
+            case 0x02: //2 byte (16 bit)
+                break;
+                return "";
+            case 0x03: //3 byte (24 bit)
+                return this.int_decode(record.data);
+            case 0x04: //3 byte (32 bit)
+                break;
+            case 0x05: //4 byte Real(32 bit)
+                break;
+            case 0x06: //6 byte integer (48 bit)
+                break;
+            case 0x07: //8 byte integer (64 bit)
+                return "";
+            case 0x09: // 2 digit BCD (8 bit)
+                return parseInt(this.bcd_decode(record.data));
+            case 0x0A: //4 digit BCD (16 bit)
+                return parseInt(this.bcd_decode(record.data));
+            case 0x0B: //6 digit BCD (24 bit)
+                return parseInt(this.bcd_decode(record.data));
+            case 0x0C: //8 digit BCD (32 bit)
+                return parseInt(this.bcd_decode(record.data));
+            case 0x0E: // 12 digit BCD (48 bit)
+                return parseInt(this.bcd_decode(record.data));
+            case 0x0F: //special functions
+                break;
+            case 0x0D: break;
+                return "";
+            default:
+                return "Unknown DIF ({0})".replace("{0}", record.drh['dib'].dif.toString(16));
+        }
+        return "FIXME"
+    },
+    data_record_func: function(record){
+        switch(record.drh['dib'].dif & Consts.MBUS_DATA_RECORD_DIF_MASK_FUNCTION){
+            case 0x00:
+                return "Instantaneous value";
+            case 0x10:
+                return "Maximum value";
+            case 0x20:
+                return "Minimum value";
+            case 0x30:
+                return "Value during error state";
+            default:
+                return "Unknown";
+        }
+    },
+    decode_manufacture: function (m_id) {
+        return String.fromCharCode(((m_id >> 10) & 0x001F) + 64) +
+               String.fromCharCode(((m_id >> 5) & 0x001F) + 64) +
+               String.fromCharCode(((m_id) & 0x001F) + 64);
+    },
+    int_decode: function(int_data){
+        var value = 0;
+        var neg = int_data[-1] & 0x80;
+
+        var i = int_data.length;
+        while (i > 0){
+            if(neg)
+                value = (value << 8) + (int_data[i - 1] ^ 0xFF)
+            else
+                value = (value << 8) + int_data[i - 1]
+
+            i -= 1
+        }
+
+        if(neg)
+            value = (value * -1) - 1
+
+        return value
+    },
+    bcd_decode: function(bcd_data){
+        let val = 0;
+        let i = bcd_data.length;
+        while (i > 0) {
+            val = (val * 10) + ((bcd_data[i - 1] >> 4) & 0xF)
+            val = (val * 10) + (bcd_data[i - 1] & 0xF)
+
+            i -= 1
+        }
+
+        return val
+    }
+};
+
+var MBusDataInformationBlock = {
+    dif: undefined,
+    dife: [],
+};
+
+var MBusValueInformationBlock = {
+    vif: undefined,
+    vife: [],
+};
+
+function MBusRecord() {
+    this.drh = {
+        dib: Object.create(MBusDataInformationBlock),
+        vib: Object.create(MBusValueInformationBlock),
+    }
+    this.data = []; //data[254]
+    this.timestamp = undefined;
+    //this.data_len = 0;
+    this.data_len = function () {
+        return {
+            0x0: 0, 0x1: 1,
+            0x2: 2, 0x3: 3,
+            0x4: 4, 0x5: 4,
+            0x6: 6, 0x7: 8,
+
+            0x8: 0, 0x9: 1,
+            0xA: 2, 0xB: 3,
+            0xC: 4, 0xD: 0, // variable data length, data length stored in data field
+            0xE: 6, 0xF: 8
+        }[this.drh['dib'].dif & Consts.MBUS_DATA_RECORD_DIF_MASK_DATA];
+    }
+}
+
+
+function MBusLongFrame() {
+    this.compute_crc = function () {
+        var crcsum = 0;
+        for (var ii = 0; ii < this.data.length; ii++) {
+            crcsum += parseInt(this.data[ii], 16)
+        }
+        var crcSumHex = crcsum.toString(16).slice(-2).toLowerCase();
+        return crcSumHex;
+    }
+    this.check_crc = function(){
+        return this.compute_crc() === this.checksum;
+    }
+    this.parse_user_data = function (user_data) {
+        if (!user_data)
+            user_data = this.data;
+
+        //C, A, CI + User data sections
+        var dType, dError;
+
+        //This entire block acts on data outside User Data...
+        var direction = parseInt(this.control, 16) & Consts.MBUS_CONTROL_MASK_DIR;
+
+        if (direction == Consts.MBUS_CONTROL_MASK_DIR_S2M) {
+            //console.log("direction S2M", direction)
+            var ci = parseInt(this.control_information,16);
+            if (ci == Consts.MBUS_CONTROL_INFO_RESP_VARIABLE) {
+                if (user_data.length <= 3) {
+                    console.log("Got zero data_size")
+                    return -1;
+                }
+
+                dType = Consts.MBUS_DATA_TYPE_VARIABLE;
+            }
+        }
+        else {
+            console.log("Wrong direction in frame (master to slave)");
+            return -1
+        }
+
+        if (dType) {
+            switch (dType) {
+                case Consts.MBUS_DATA_TYPE_ERROR:
+                    break;
+                case Consts.MBUS_DATA_TYPE_FIXED:
+                    break;
+                case Consts.MBUS_DATA_TYPE_VARIABLE:
+                    return this.parse_variable_data(user_data.slice(3));
+            }
+        }
+        else {
+            console.log("Unknown control information {0}".replace("{0}", this.control_information));
+            return -1;
+        }
+    }
+    this.dump_records = function () {
+        let jdata = {
+            'mbus_data': []
+        };
+
+        for (var idx = 0; idx < this.records.length; idx++) {
+            let record = this.records[idx];
+            let row = {
+                'id': idx,
+                'function': null,
+                'storage': null,
+                'unit': null,
+                'value': null
+            }
+
+            if(record.drh['dib'].dif == Consts.MBUS_DIB_DIF_MANUFACTURER_SPECIFIC)
+                row['function'] = 'manufacturer specific'
+            else if (record.drh['dib'].dif == Consts.MBUS_DIB_DIF_MORE_RECORDS_FOLLOW)
+                row['function'] = 'more records'
+            else {
+                row['function'] = this.data_record_func(record)
+                //row['storage'] = self.data_record_storage_num(record)
+                //row['unit'] = this.vib_unit_lookup(record.drh['vib'])
+                row['value'] = this.data_record_decode(record)
+            }
+
+            jdata['mbus_data'].push(row);
+        }
+
+        var resJson = JSON.stringify(jdata, null, 5);
+        console.log(resJson);
+    }
+    this.parse_variable_data = function (data) {
+        //Attempting to parse variable data
+        if (data.length < Consts.MBUS_DATA_VARIABLE_HEADER_LENGTH) {
+            console.log("Varialble header to short")
+            return -1;
+        }
+
+        //user_data = user_data.map(d => parseInt(d, 16));
+
+        var hdr = {
+            id_bcd: data.slice(0, 4),
+            manufacturer: data.slice(4, 6),
+            version: data[6],
+            medium: data[7],
+            access_no: data[8],
+            status: data[9],
+            signature: data.slice(10, 12),
+            records: []
+        }
+
+        var more_records_follow = false;
+
+        var i = Consts.MBUS_DATA_VARIABLE_HEADER_LENGTH;
+
+        while (i < this.data_size) {
+            // Skip filler DIF=0x2F
+            if ((parseInt(data[i], 16) & 0xff) == Consts.MBUS_DIB_DIF_IDLE_FILLER) {
+                i += 1;
+                continue;
+            }
+
+            var newRecord = new MBusRecord();
+
+            //read and parse DIB(=DIF+DIFE)
+            newRecord.drh['dib'].dif = parseInt(data[i], 16);
+
+            if(newRecord.drh['dib'].dif == Consts.MBUS_DIB_DIF_MANUFACTURER_SPECIFIC || 
+               newRecord.drh['dib'].dif == Consts.MBUS_DIB_DIF_MORE_RECORDS_FOLLOW) {
+
+                if ((newRecord.drh['dib'].dif & 0xff) == Consts.MBUS_DIB_DIF_MORE_RECORDS_FOLLOW)
+                    more_records_follow = true;
+                i += 1;
+
+                //just copy the remaining data as it is vendor specific
+                //and append it as a record
+                newRecord.data_len = this.data_size - i;
+                newRecord.data.push(data.slice(i, i + newRecord.data_len()));
+                i += newRecord.data_len();
+
+                this.records.push(newRecord);
+                continue;
+            }
+
+            //calculate length of data record
+            while ((i < this.data_size) && (parseInt(data[i], 16) & Consts.MBUS_DIB_DIF_EXTENSION_BIT)) {
+                newRecord.drh['dib'].dife.push(parseInt(data[i + 1]))
+                i += 1
+            }
+            
+            i += 1;
+
+            //Read and parse VIF
+            if (newRecord.drh['vib'].vif & Consts.MBUS_DIB_VIF_WITHOUT_EXTENSION == 0x7C){
+                //variable length VIF in ASCII format
+                var var_vif_len = parseInt(data[i], 16);
+                i += 1
+
+                newRecord.drh['vib'].custom_vif = data.splice(i, i + var_vif_len);
+
+                i += var_vif_len
+            }
+
+            //VIFE
+            if(newRecord.drh['vib'].vif & Consts.MBUS_DIB_VIF_EXTENSION_BIT){
+                newRecord.drh['vib'].vife.push(parseInt(data[i], 16));
+
+                while ((i < this.data_size) && (parseInt(data[i], 16) & MBUS_DIB_VIF_EXTENSION_BIT)) {
+                    newRecord.drh['vib'].vife.push(data[i + 1])
+                    i += 1
+                }
+
+                i += 1
+            }
+
+            //Re-calculate data length, if of variable length type
+            if ((newRecord.drh['dib'].dif & Consts.MBUS_DATA_RECORD_DIF_MASK_DATA) == 0x0D) { //flag for variable length data
+                if (parseInt(data[i], 16) <= 0xBF) {
+                    newRecord.data_len = parseInt(data[i], 16);
+                    i += 1;
+                }
+                else if (parseInt(data[i], 16) >= 0xC0 && parseInt(data[i], 16) <= 0xCF) {
+                    newRecord.data_len = (data - 0xC0) * 2;
+                    i += 1;
+                }
+                else if (parseInt(data[i], 16) >= 0xD0 && parseInt(data[i], 16) <= 0xDF) {
+                    newRecord.data_len = (parseInt(data[i], 16) - 0xD0) * 2
+                    i += 1
+                }
+                else if (parseInt(data[i], 16) >= 0xE0 && parseInt(data[i], 16) <= 0xEF) {
+                    newRecord.data_len = parseInt(data[i], 16) - 0xE0;
+                    i += 1;
+                }
+                else if (parseInt(data[i], 16) >= 0xF0 && parseInt(data[i], 16) <= 0xFA) {
+                    newRecord.data_len = parseInt(data[i], 16) - 0xF0;
+                    i += 1;
+                }
+            }
+            var ll = newRecord.data_len();
+            var rec = data.slice(i, i + ll);
+            newRecord.data.push(rec);
+            i += ll;
+
+            //Add action
+            hdr.records.push(newRecord);
+        }
+
+        //Exit
+        return hdr;
+    }
+}
+MBusLongFrame.prototype = Object.create(MBusTelegram);
+
+
+function parseMBusFrames(data) {
+    var base_frame;
+    if (data && data.length < Consts.MBUS_FRAME_BASE_SIZE_LONG)
+        console.error("Invalid M-Bus length");
+
+    if (data[0] == Consts.MBUS_FRAME_LONG_START.toString(16)){
+        base_frame = new MBusLongFrame();
+        base_frame.type = Consts.MBUS_FRAME_TYPE_LONG;
+        base_frame.base_size = Consts.MBUS_FRAME_BASE_SIZE_LONG;
+        base_frame.start1 = data[0];
+        base_frame.length1 = data[1];
+        base_frame.length2 = data[2];
+
+        if (base_frame.length1 < 3 || base_frame.length1 != base_frame.length2) {
+            console.error("Invalid M-Bus length1 value");
+            return;
+        }
+
+        base_frame.start2 = data[3];
+        base_frame.control = data[4];
+        base_frame.address = data[5];
+        base_frame.control_information = data[6];
+        base_frame.checksum = data.slice(-2)[0].toLowerCase();
+        base_frame.stop = data.slice(-1)[0];
+        base_frame.data_size = base_frame.length1 - 3;
+        base_frame.data = data.slice(4, -2);
+
+        if (base_frame.check_crc() == false) {
+            console.error("MBus frame crc error", base_frame.compute_crc(), base_frame.checksum);
+            return;
+        }
+
+        var d = base_frame.parse_user_data();
+        base_frame.records = [];
+        base_frame.info = d;
+
+        if ('records' in d) {
+            base_frame.records = d['records'];
+        }
+
+    }
+    else if (data[0] == Consts.MBUS_FRAME_CONTROL_START.toString(16)) {
+    }
+    else{
+        //base_frame = "Wrong start byte";
+    }
+
+    return base_frame;
+}
+
+
+
+
+////=====
+//var longFrame = new MBusLongFrame()
+//console.log(longFrame)
+
 var myutils = (function () {
     function byteArrayToLong(/*byte[]*/byteArray) {
         var value = 0;
@@ -243,23 +678,7 @@ var callback = function () {
                             start: "",
                             stop: "",
                         }
-                    },
-
-                    drh:{
-                        dib: {
-                            dif: {
-                                extBit: 0,
-                                lsbStorageNo: 0,
-                                FuncField: 0,
-                                DataField:0
-                            },
-                            dife: "0x00",
-                        },
-                        vib: {
-                            vif: "0x00",
-                            vife: "0x00"
-                        }
-                    },
+                    },                    
 
                     mbusRecord: {
                         function:"",
@@ -353,7 +772,10 @@ var callback = function () {
                                 this.MbusData.head.a = "0x" + this.messageStrHex[5];
                                 this.MbusData.head.crc = "0x" + this.messageStrHex[this.messageStrHex.length - 2];
                                 this.MbusData.head.start = "0x" + this.messageStrHex[0];
-                                this.MbusData.head.length = "0x" + this.messageStrHex[1];
+                                this.MbusData.head.length1 = "0x" + this.messageStrHex[1];
+                                this.MbusData.head.length2 = "0x" + this.messageStrHex[2];
+                                this.MbusData.data_size = this.MbusData.head.length1 - 3;
+
                                 this.MbusData.head.stop = "0x" + this.messageStrHex[this.messageStrHex.length-1];
 
                                 this.MbusData.body.header.access_no = ''
@@ -363,26 +785,32 @@ var callback = function () {
                                 this.MbusData.body.header.status = ''
                                 this.MbusData.body.header.type = "0x" + this.messageStrHex[6];                                
 
-                                if (this.MbusData.body.header.type === "0x72") {
-                                    this.data_size = parseInt(this.messageStrHex[1], 16)-3;
+                                if (this.MbusData.body.header.type === Consts.MBUS_CONTROL_INFO_RESP_VARIABLE) {
+                                    
+                                    function DRH(){
+
+                                    }                                 
+
+
+                                    //this.data_size = parseInt(this.messageStrHex[1], 16)-3;
 
                                     //if (this.data_block.length > Consts.MBUS_DATA_VARIABLE_HEADER_LENGTH) {
-                                        this.MbusData.body.header.identification = this.messageStrHex.slice(7, 11).reverse().map(function (it) { return "0x" + it });
-                                        var byteArray = this.messageStrHex.slice(11, 13).map(function (d) { return parseInt(d, 16) })
-                                        var IDNo = myutils.byteArrayToLong(byteArray);
-                                        this.MbusData.body.header.manufacturer = myutils.decode_manufacture(IDNo);
-                                        this.MbusData.body.header.version = "0x" + this.messageStrHex[13];
-                                        this.MbusData.body.header.medium = "0x" + this.messageStrHex[14];
-                                        this.MbusData.body.header.access_no = parseInt(this.messageStrHex[15], 16);
-                                        this.MbusData.body.header.status = "0x" + this.messageStrHex[16];
-                                        this.MbusData.body.header.sign = this.messageStrHex.slice(16, 18).map(function (it) { return "0x" + it });
-                                    this.data_block = this.messageStrHex.slice(19, -2);
+                                    //    this.MbusData.body.header.identification = this.messageStrHex.slice(7, 11).reverse().map(function (it) { return "0x" + it });
+                                    //    var byteArray = this.messageStrHex.slice(11, 13).map(function (d) { return parseInt(d, 16) })
+                                    //    var IDNo = myutils.byteArrayToLong(byteArray);
+                                    //    this.MbusData.body.header.manufacturer = myutils.decode_manufacture(IDNo);
+                                    //    this.MbusData.body.header.version = "0x" + this.messageStrHex[13];
+                                    //    this.MbusData.body.header.medium = "0x" + this.messageStrHex[14];
+                                    //    this.MbusData.body.header.access_no = parseInt(this.messageStrHex[15], 16);
+                                    //    this.MbusData.body.header.status = "0x" + this.messageStrHex[16];
+                                    //    this.MbusData.body.header.sign = this.messageStrHex.slice(16, 18).map(function (it) { return "0x" + it });
+                                    //this.data_block = this.messageStrHex.slice(19, -2);
 
-                                    var lenUserData = this.data_block.length;
-                                    var kDataBlock_Counter = lenUserData;
-                                    for (var jj = 0; jj < lenUserData; jj++) {
+                                    //var lenUserData = this.data_block.length;
+                                    //var kDataBlock_Counter = lenUserData;
+                                    //for (var jj = 0; jj < lenUserData; jj++) {
 
-                                    }
+                                    //}
                                     
                                     console.log("data_block", this.data_block)
                                 }
@@ -416,7 +844,11 @@ var callback = function () {
 
                         //var arrStr = formatHexStr(inputMbusMsg.value).split(':');
                         var arrStr = inputMbusMsg.value.split(' ');
-                        
+                        //var mbus_data = arrStr.map(function (s) { return parseInt(s,16) })
+                        console.log("M-Bus frame orig:", arrStr)
+
+                        var res = parseMBusFrames(arrStr);
+                        console.log("M-Bus frame parsed:", res)
                         //if (arrStr[0] == '68') {
                         //    var payloadLen = parseInt(arrStr[1], 16);
                         //    var payload = arrStr.slice(4, arrStr.length - 2);
@@ -505,18 +937,16 @@ var callback = function () {
                         //    }
                         //}
 
-                        var mbusParser1 = Object.create(MBusParser);
-                        mbusParser1.init(arrStr).parse();
+                        //var mbusParser1 = Object.create(MBusParser);
+                        //mbusParser1.init(arrStr).parse();
                         //logParser.value = formatHexStr(inputMbusMsg.value);
                     }
                     e.stopPropagation();
                 });
-
                 return null;
             },
             'default': function () {
                 console.log("default module")
-
                 return null;
             }
         }
