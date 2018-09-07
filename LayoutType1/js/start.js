@@ -346,7 +346,6 @@ function MBusRecord() {
     }
 }
 
-
 function MBusLongFrame() {
     this.compute_crc = function () {
         var crcsum = 0;
@@ -496,9 +495,9 @@ function MBusLongFrame() {
                 //just copy the remaining data as it is vendor specific
                 //and append it as a record
                 newRecord.data_length = this.data_size - i;
-                newRecord.data.push(data.slice(i, i + newRecord.data_len()));
+                newRecord.data = newRecord.data.concat(data.slice(i, i + newRecord.data_len()));
                 i += newRecord.data_len();
-                this.records.push(newRecord);
+                this.records = this.records.concat(newRecord);
                 continue;
             }
 
@@ -518,7 +517,7 @@ function MBusLongFrame() {
                 var var_vif_len = data[i];
                 i += 1
 
-                newRecord.drh['vib'].custom_vif = data.splice(i, i + var_vif_len);
+                newRecord.drh['vib'].custom_vif = data.slice(i, i + var_vif_len);
 
                 i += var_vif_len
             }
@@ -560,11 +559,11 @@ function MBusLongFrame() {
             }
             var ll = newRecord.data_len();
             var rec = data.slice(i, i + ll);
-            newRecord.data.push(rec);
+            newRecord.data = rec;
             i += ll;
 
             //Add action
-            hdr.records.push(newRecord);
+            hdr.records = hdr.records.concat(newRecord);
         }
 
         //Exit
@@ -572,7 +571,6 @@ function MBusLongFrame() {
     }
 }
 MBusLongFrame.prototype = Object.create(MBusTelegram);
-
 
 function parseMBusFrames(data) {
     var base_frame;
@@ -624,13 +622,6 @@ function parseMBusFrames(data) {
     return base_frame;
 }
 
-
-
-
-////=====
-//var longFrame = new MBusLongFrame()
-//console.log(longFrame)
-
 var myutils = (function () {
     function byteArrayToLong(/*byte[]*/byteArray) {
         var value = 0;
@@ -668,7 +659,7 @@ var myutils = (function () {
 })();
 
 var callback = function () {
-    var menuItems = document.querySelector(".scrollmenu");
+    var menuItems = document.querySelector("#appNav");
     menuItems.addEventListener("click", menuClickEvent, false);
 
     function unselectActivePage(page) {
@@ -695,33 +686,47 @@ var callback = function () {
     }
 
     function getActivePage() {
-        var currActiveMenu = document.getElementsByClassName("active");
+        var currActiveMenu = document.getElementsByClassName("selected");
         return currActiveMenu[0].id;
     }
 
     function menuClickEvent(e) {
-        if (e.target !== e.currentTarget) {
+        var targetImg = e.target.className.indexOf("icon") > -1,
+            targetItemDiv = e.target.className.indexOf("appMenuItem") > -1;
+
+        if (e.target !== e.currentTarget && (targetImg || targetItemDiv)) {
             //(De)Select item menu
-            var currentActive = document.getElementsByClassName("active");
+            var currentActive = document.getElementsByClassName("selected");
             var cid = currentActive[0].id;
-            currentActive[0].className = currentActive[0].className.replace("active", "").trim();
+            currentActive[0].className = currentActive[0].className.replace("selected", "").trim();
 
             unselectActivePage(cid);
               
-            e.target.className += " active";
+            let mid = e.target.id,
+                tmpTarget;
+            if(mid == "") {
+                tmpTarget = e.target.parentNode;
+            }else{
+                tmpTarget = e.target;
+            }
+            mid = tmpTarget.id;
+            tmpTarget.className += " selected";           
 
-            switch (e.target.id) {
+            switch (mid) {
                 case "home":
                     selectPage("home");
                     break;
-                case "alarm":
-                    selectPage("alarm");
+                case "datacollect":
+                    selectPage("datacollect");
                     break;
-                case "analyse":
-                    selectPage("analyse");
+                case "drawing":
+                    selectPage("drawing");
                     break;
-                case "device":
-                    selectPage("device");
+                case "myapps":
+                    selectPage("myapps");
+                    break;
+                case "network":
+                    selectPage("network");
                     break;
                 case "map":
                     selectPage("map");
@@ -731,7 +736,7 @@ var callback = function () {
                     break;
             }
 
-            RunModules(e.target.id);
+            RunModules(mid);
 
         }
 
@@ -740,7 +745,7 @@ var callback = function () {
 
     function RunModules(page) {
         var fn;
-
+        selectPage(page);
         var Modules = {
             'home': function () {
                 console.log("home module")
@@ -783,8 +788,8 @@ var callback = function () {
 
                     return null
             },
-            'alarm': function () {
-                console.log("alarm module");
+            'myapps': function () {
+                console.log("Apps module");
 
                 function formatHexStr(hexstr) {
                     var dest = []
@@ -984,35 +989,27 @@ var callback = function () {
                 }
 
                 //inputMbusMsg.value = "688e8e6808007200000000824d070e030000000c78724270000f034600451108a75e6f00f7000000f2f4aa901200007f001606a901000027328420083935323938304442373149208d050000000000000080000000808080808080808080fb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cb16";
-                //inputMbusMsg.value = "68 56 56 68 08 01 72 23 15 01 09 77 04 14 07 25 00 00 00 0C 78 23 15 01 09 0D 7C 08 44 49 20 2E 74 73 75 63 0A 35 35 37 36 37 30 41 4C 39 30 04 6D 1A 0E CD 13 02 7C 09 65 6D 69 74 20 2E 74 61 62 D4 09 04 13 1F 00 00 00 04 93 7F 00 00 00 00 44 13 1F 00 00 00 0F 00 01 1F A9 16";
+                inputMbusMsg.value = "68 56 56 68 08 01 72 23 15 01 09 77 04 14 07 25 00 00 00 0C 78 23 15 01 09 0D 7C 08 44 49 20 2E 74 73 75 63 0A 35 35 37 36 37 30 41 4C 39 30 04 6D 1A 0E CD 13 02 7C 09 65 6D 69 74 20 2E 74 61 62 D4 09 04 13 1F 00 00 00 04 93 7F 00 00 00 00 44 13 1F 00 00 00 0F 00 01 1F A9 16";
 
-                let strMbus =   "68 6A 6A 68 08 01 72 43 53 93 07 65" +
-                                " 32 10 04 CA 00 00 00 0C 05 14 00 00" +
-                                " 00 0C 13 13 20 00 00 0B 22 01 24 03" +
-                                " 04 6D 12 0B D3 12 32 6C 00 00 0C 78" +
-                                " 43 53 93 07 06 FD 0C F2 03 01 00 F6" +
-                                " 01 0D FD 0B 05 31 32 4D 46 57 01 FD" +
-                                " 0E 00 4C 05 14 00 00 00 4C 13 13 20" +
-                                " 00 00 42 6C BF 1C 0F 37 FD 17 00 00" +
-                                " 00 00 00 00 00 00 02 7A 25 00 02 78" +
-                                " 25 00 3A 16";
-
-                inputMbusMsg.value = strMbus;
-
+                //let strMbus =   "68 6A 6A 68 08 01 72 43 53 93 07 65" +
+                //                " 32 10 04 CA 00 00 00 0C 05 14 00 00" +
+                //                " 00 0C 13 13 20 00 00 0B 22 01 24 03" +
+                //                " 04 6D 12 0B D3 12 32 6C 00 00 0C 78" +
+                //                " 43 53 93 07 06 FD 0C F2 03 01 00 F6" +
+                //                " 01 0D FD 0B 05 31 32 4D 46 57 01 FD" +
+                //                " 0E 00 4C 05 14 00 00 00 4C 13 13 20" +
+                //                " 00 00 42 6C BF 1C 0F 37 FD 17 00 00" +
+                //                " 00 00 00 00 00 00 02 7A 25 00 02 78" +
+                //                " 25 00 3A 16";
+                //inputMbusMsg.value = strMbus;
 
                 var btnParse = document.getElementById("btnParseMsg");
                 var logParser = document.getElementById("messageResults");
 
                 document.addEventListener("click", function (e) {
                     if (e.target.id == "btnParseMsg") {
-
                         //var arrStr = formatHexStr(inputMbusMsg.value).split(':');
-
-
-
                         var msgArr = inputMbusMsg.value.split(' ');
-
-
                         if (msgArr.length === 1) {
                             if (msgArr.indexOf("\\x") > -1) {
                                 msgArr = msgArr.split('\\x');
@@ -1161,4 +1158,13 @@ if (
     callback();
 } else {
     document.addEventListener("DOMContentLoaded", callback);
+}
+
+
+function openNav() {
+    document.getElementById("appNav").style.width = "100%";
+}
+
+function closeNav() {
+    document.getElementById("appNav").style.width = "0%";
 }
