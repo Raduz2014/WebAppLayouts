@@ -98,8 +98,12 @@ footer {
 }
 
 .overlay-content > div {
-   padding:25px;
+   padding:7px;
    display:inline-block;
+}
+
+.overlay-content > div.selected {
+    background-color:#d1b50d;
 }
 
 .overlay a {

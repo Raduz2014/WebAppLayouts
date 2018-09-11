@@ -81,7 +81,9 @@ var callback = function () {
         var selectedPage = document.getElementById(page + "-page")
         if (selectedPage !== null) {
             var seldisp = selectedPage.style.display;
-            if (seldisp !== null) selectedPage.style.display = "block";
+            if (seldisp !== null) {
+                selectedPage.style.display = "block";
+            }
         }
     }
 
@@ -137,7 +139,6 @@ var callback = function () {
             }
 
             RunModules(mid);
-
         }
 
         e.stopPropagation();
@@ -149,58 +150,44 @@ var callback = function () {
         selectPage(page);
         var Modules = {
             'home': function () {
-                console.log("home module")
-                var context;
-                var x = 0;
-                var y = 0;
-                var width = 850;
-                var height = 640;
-                var imageObj = new Image();
-                imageObj.src = '../img/d.JPG';
+                loadJS('js/home_module.js', _cb, document.head);
+                function _cb() {
+                    HomeModule.init();
+                }
+            },
+            'drawing': function () {
+                if (!DrawingModule) {
+                    loadJS('js/drawing_module.js', _cb, document.head);
+                    function _cb() {
+                        DrawingModule.init();
+                    }
+                }
+                else {
+                    if (DrawingModule.isPageInView()) {
 
+                    }
+                    else {
 
-                function InitContext() {
-                    var $canvasDiv = document.querySelector('#canvasdiv');
-                    context = mycanvas.getContext('2d');
-
-
-                    var canvas = document.getElementById("mycanvas");
-                    canvas.height = $canvasDiv.clientHeight;
-                    canvas.width = $canvasDiv.clientWidth;
-
-                    imageObj.onload = function () {
-                        context.drawImage(imageObj, x, y, canvas.width, canvas.height);
-                    };
+                    }
                 }
 
-                InitContext();
-
-                window.addEventListener("resize", resizeCanvas, false);
-
-                function resizeCanvas(e) {
-                    var myCanvas = document.getElementById("mycanvas");
-                    var $canvasDiv = document.querySelector('#canvasdiv');
-
-                    myCanvas.width = $canvasDiv.clientWidth;
-                    myCanvas.height = $canvasDiv.clientHeight;
-                    context.drawImage(imageObj, x, y, myCanvas.width, myCanvas.height);
-
-                }
-
-                    return null
+               
+                return;
             },
             'myapps': function () {
-                console.log("Apps module");
-                loadJS('js/MbusParser.js', MyAppsModule, document.head);                
-                function MyAppsModule() {
+                loadJS('js/MbusParser.js', _cb, document.head);
+                function _cb() {
                     console.log("MbusParser.js script loaded");
-                    MBusParserModule.initModule();
+                    MBusParserModule.init();
                 }
-                return null;
+                return;
             },
             'default': function () {
-                console.log("default module")
-                return null;
+                loadJS('js/default_module.js', _cb, document.head);
+                function _cb() {
+                    DefaultModule.init();
+                }
+                return;
             }
         }
 
