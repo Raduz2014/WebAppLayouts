@@ -1,0 +1,151 @@
+﻿* {
+    box-sizing:border-box;
+}
+
+body {
+    width:100vw;
+    height:100vh;
+    margin:0;
+    padding:0;
+    border:1px solid red;
+    background-color: #777;
+
+}
+
+header {
+    background-color: #666;
+    padding: 1px;
+    text-align: center;
+    color: white;
+    /*height:10vh;*/
+    width:100vw;
+    height:82px;
+}
+
+header div.logo {
+    float:left;
+    width:251px;
+    text-align: center;
+    vertical-align:middle;
+}
+
+header div.mainmenu {
+    float:left;
+    text-align: center;
+    width:60%;
+    padding:5px 0px;
+}
+
+    div.scrollmenu {
+        padding:1px 0px;
+        white-space:nowrap;
+        overflow-y:hidden;
+        overflow-x:scroll;
+        background-color:#333;
+    }
+
+     div.scrollmenu div {
+         display:inline-block;
+         color:white;
+         text-align:center;
+         padding:14px;
+         text-decoration:none;
+         background-repeat:no-repeat;
+         background-size:contain;
+         background-position: 11px 0px;
+         width:64px;
+         height:42px;
+     }
+
+     /*div.scrollmenu div > a > img {
+         width:32px;
+         height:32px;
+     }*/
+
+      div.scrollmenu div:hover {
+          background-color:#777;
+      }
+
+      div.scrollmenu div.active {
+           background-color:red;
+       }
+
+header div.topaction {
+    float:right;
+    text-align: center;
+}
+
+section {
+    height: 84vh;
+}
+
+/*section div:first-child {
+    float: left;
+    width: 251px;
+    background: #ccc;
+    padding: 20px;
+}*/
+
+#leftside-menu {
+    float: left;
+    width: 251px;
+    background: #ccc;
+    padding: 20px;
+}
+
+#leftside-menu ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+/*section div:first-child ul {
+    list-style-type: none;
+    padding: 0;
+}*/
+
+/*section div:last-child {
+    float: left;
+    padding: 20px;
+    width: calc(100% - 251px);
+    background-color: #f1f1f1;
+}*/
+
+#main-content {
+    float: left;
+    /*padding: 5px 15px;*/
+    width: calc(100% - 251px);
+    background-color: #f1f1f1;
+}
+
+/*section div:first-child, section div:last-child {
+    overflow-y:auto;
+    height: 86vh;
+}*/
+
+#main-content, #leftside-menu {
+   /*overflow-y:auto;*/
+    height: 86vh;
+}
+
+
+.workarea {
+    width:100%;
+    /*height:78vh;*/
+    height:100%;
+    background-color:#808080;
+}
+
+/*#drawarea {
+    width:100%;
+    height:100%;
+}*/
+
+footer {
+    background-color: #777;
+    padding: 0;
+    border:0;
+    text-align: center;
+    color: white;
+    margin:0;
+    height:5vh;
+}
