@@ -133,6 +133,9 @@ var callback = function () {
                 case "map":
                     selectPage("map");
                     break;
+                case "myreactapp":
+                    selectPage("myreactapp")
+                    break;
                 default:
                     selectPage("default");
                     break;
@@ -169,9 +172,7 @@ var callback = function () {
                     else {
 
                     }
-                }
-
-               
+                }               
                 return;
             },
             'myapps': function () {
@@ -179,6 +180,14 @@ var callback = function () {
                 function _cb() {
                     console.log("MbusParser.js script loaded");
                     MBusParserModule.init();
+                }
+                return;
+            },
+            'myreactapp': function () {
+                loadJS('js/MyReactApp.js', _cb, document.head);
+                function _cb() {
+                    console.log("MyReactApp.js script loaded");
+                    ReactAppModule.init();
                 }
                 return;
             },
