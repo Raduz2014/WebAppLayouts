@@ -125,3 +125,15 @@ footer {
     right: 45px;
     font-size: 60px;
 }
+
+.visible {
+    display:block;
+}
+
+.hide {
+    display:none;
+}
+
+/*.main-content div.page {
+    display:none;
+}*/

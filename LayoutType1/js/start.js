@@ -60,7 +60,119 @@ var loadJS = function (url, _onCompleteCallback, location) {
 
 var callback = function () {
     var menuItems = document.querySelector("#appNav");
-    menuItems.addEventListener("click", menuClickEvent, false);
+    //menuItems.addEventListener("click", menuClickEvent, false);
+    let oldUrl = location.hre,
+        oldHash = location.hash;
+
+    if ("onhashchange" in window) {
+        window.onhashchange = appHashChange
+    }
+
+    function appHashChange() {
+        console.log("hash change")
+        let newUrl = location.href,
+            newHash = location.hash;
+
+        if (newHash != oldHash) {
+            render(decodeURI(window.location.hash));
+        }
+    }
+
+    function render(url){
+        let temp = url.split('/')[0];
+        console.log("render",temp)
+
+        var allPages = document.querySelectorAll(".main-content .page.visible");
+        if (allPages.length > 0) {
+            for (let p = 0; p < allPages.length; p++) {
+                if (allPages[p].className.indexOf("visible") > -1) {
+                    allPages[p].classList.remove("visible");
+                    allPages[p].classList.add("hide");
+                }
+            }
+        }
+
+        
+
+        var map = {
+            //home page
+            '': function () {
+                renderHomePage();
+            },
+            //map page
+            '#map': function () {
+                renderMapPage();
+            },
+            //datacollect page
+            '#datacollect': function () {
+                renderDataCollectPage();
+            },
+            //map page
+            '#drawing': function () {
+                renderDrawPage();
+            },
+            //myapps page
+            '#myapps': function () {
+                renderMyAppsPage();
+            },
+            //network page
+            '#network': function () {
+                renderNetworkPage();
+            },
+        };
+
+        // Execute the needed function depending on the url keyword (stored in temp).
+        if (map[temp]) {
+            map[temp]();
+        }
+            // If the keyword isn't listed in the above - render the error page.
+        else {
+            renderErrorPage();
+        }
+    }
+
+    function renderHomePage() {
+        var page = document.querySelectorAll("#home-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    }
+
+    function renderMapPage() {
+        var page = document.querySelectorAll("#map-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    }
+
+    function renderNetworkPage() {
+        var page = document.querySelectorAll("#network-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    }
+
+    function renderMyAppsPage() {
+        var page = document.querySelectorAll("#myapps-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    } 
+    
+
+    function renderDrawPage() {
+        var page = document.querySelectorAll("#drawing-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    }
+
+    function renderDataCollectPage() {
+        var page = document.querySelectorAll("#datacollect-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    }
+
+    function renderErrorPage() {
+        var page = document.querySelectorAll("#error-page");
+        page[0].classList.remove("hide");
+        page[0].classList.add("visible");
+    }
 
     function unselectActivePage(page) {
         //hide default page
@@ -102,46 +214,46 @@ var callback = function () {
             var cid = currentActive[0].id;
             currentActive[0].className = currentActive[0].className.replace("selected", "").trim();
 
-            unselectActivePage(cid);
+            //unselectActivePage(cid);
               
-            let mid = e.target.id,
-                tmpTarget;
-            if(mid == "") {
-                tmpTarget = e.target.parentNode;
-            }else{
-                tmpTarget = e.target;
-            }
-            mid = tmpTarget.id;
-            tmpTarget.className += " selected";           
+            //let mid = e.target.id,
+            //    tmpTarget;
+            //if(mid == "") {
+            //    tmpTarget = e.target.parentNode;
+            //}else{
+            //    tmpTarget = e.target;
+            //}
+            //mid = tmpTarget.id;
+            //tmpTarget.className += " selected";           
 
-            switch (mid) {
-                case "home":
-                    selectPage("home");
-                    break;
-                case "datacollect":
-                    selectPage("datacollect");
-                    break;
-                case "drawing":
-                    selectPage("drawing");
-                    break;
-                case "myapps":
-                    selectPage("myapps");
-                    break;
-                case "network":
-                    selectPage("network");
-                    break;
-                case "map":
-                    selectPage("map");
-                    break;
-                case "myreactapp":
-                    selectPage("myreactapp")
-                    break;
-                default:
-                    selectPage("default");
-                    break;
-            }
+            //switch (mid) {
+            //    case "home":
+            //        selectPage("home");
+            //        break;
+            //    case "datacollect":
+            //        selectPage("datacollect");
+            //        break;
+            //    case "drawing":
+            //        selectPage("drawing");
+            //        break;
+            //    case "myapps":
+            //        selectPage("myapps");
+            //        break;
+            //    case "network":
+            //        selectPage("network");
+            //        break;
+            //    case "map":
+            //        selectPage("map");
+            //        break;
+            //    case "myreactapp":
+            //        selectPage("myreactapp")
+            //        break;
+            //    default:
+            //        selectPage("default");
+            //        break;
+            //}
 
-            RunModules(mid);
+            //RunModules(mid);
         }
 
         e.stopPropagation();
@@ -150,7 +262,7 @@ var callback = function () {
 
     function RunModules(page) {
         var fn;
-        selectPage(page);
+        //selectPage(page);
         var Modules = {
             'home': function () {
                 loadJS('js/home_module.js', _cb, document.head);
@@ -159,10 +271,10 @@ var callback = function () {
                 }
             },
             'drawing': function () {
-                    loadJS('js/drawing_module.js', _cb, document.head);
-                    function _cb() {
-                        DrawingModule.init();
-                    }              
+                loadJS('js/drawing_module.js', _cb, document.head);
+                function _cb() {
+                    DrawingModule.init();
+                }              
                 return;
             },
             'myapps': function () {
@@ -200,7 +312,9 @@ var callback = function () {
         return fn();
     }
 
-    RunModules(getActivePage());
+    location.hash = "#";
+
+    //RunModules(getActivePage());
 };
 
 if (

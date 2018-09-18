@@ -16,25 +16,25 @@
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <div class="overlay-content">
             <div id="home"   class="appMenuItem metro-tile">
-                <img src="img/Icons/page_home.png" class="icon">
+                <a href=""><img src="img/Icons/page_home.png" class="icon"></a>
             </div>
-            <div id="map"   class="selected appMenuItem metro-tile">
-                <img src="img/Icons/page_map.png" class="icon">
+            <div id="map" class="selected appMenuItem metro-tile">
+                <a href="#map"><img src="img/Icons/page_map.png" class="icon"></a>
             </div>
             <div id="datacollect"   class="appMenuItem metro-tile">
-                <img src="img/Icons/page_datacollect.png" class="icon">
+                <a href="#datacollect"><img src="img/Icons/page_datacollect.png" class="icon"></a>
             </div>
             <div id="drawing"   class="appMenuItem metro-tile">
-                <img src="img/Icons/page_grid.png" class="icon">
+                <a href="#drawing"><img src="img/Icons/page_grid.png" class="icon"></a>
             </div>
             <div id="myapps"   class="appMenuItem metro-tile">
-                <img src="img/Icons/page_dma.png" class="icon">
+                <a href="#myapps"><img src="img/Icons/page_dma.png" class="icon"></a>
             </div>
             <div id="network"   class="appMenuItem metro-tile">
-                <img src="img/Icons/page_network.png" class="icon">
+                <a href="#network"><img src="img/Icons/page_network.png" class="icon"></a>
             </div>
             <div id="myreactapp" class="appMenuItem metro-tile">
-                <img src="img/Icons/page_vee.png" class="icon">
+                <a href="#myreactapp"><img src="img/Icons/page_vee.png" class="icon"></a>
             </div>
         </div>
     </div>
@@ -49,14 +49,14 @@
             </ul>
         </div>
         <div id="main-content">
-            <div id="home-page" style="display:none;">
+            <div id="home-page" class="page visible">
                 <!--<div class="workarea" style="margin:0; border:0; resize:both; overflow:auto; height:200px; width:200px;">
                     <canvas id="drawarea" style="border: 1px solid red; left: 0px; top: 0px;"></canvas>
                 </div>-->
                 <h1>Home page</h1>
                 <div>under construction</div>
             </div>
-            <div id="myapps-page" style="display:none;">
+            <div id="myapps-page" class="page hide">
                 <h1>My apps page</h1>
                 <div id="alarm-container">
                     <div style="display:block">
@@ -69,7 +69,7 @@
                 </div>
             </div>
 
-            <div id="myreactapp-page" style="display:none;">
+            <div id="myreactapp-page" class="page hide">
                 <h1>React App</h1>
                <div id="reactApp">
 
@@ -79,35 +79,38 @@
                </div>
             </div>
 
-            <div id="map-page" style="display:none;">
+            <div id="map-page" class="page hide">
                 <h1>Analyse page</h1>
                 <p>London is the capital city of England. It is the most populous city in the  United Kingdom, with a metropolitan area of over 13 million inhabitants.</p>
                 <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
             </div>
 
-            <div id="datacollect-page" style="display:none;">
+            <div id="datacollect-page" class="page hide">
                 <h1>Datacollect page</h1>
                 <p>London is the capital city of England. It is the most populous city in the  United Kingdom, with a metropolitan area of over 13 million inhabitants.</p>
                 <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
             </div>
 
-            <div id="drawing-page" style="display:none;">
+            <div id="drawing-page" class="page hide">
                 <h1>Drawing page</h1>
                 <div id="canvasdiv" style="margin: 5px; height:100%; width:100%; /*height: 85vh; width: 100vw;*/">
                     <canvas id="mycanvas" style="border: 1px solid red;"></canvas>
                 </div>
             </div>
 
-            <div id="network-page" style="display:none;">
+            <div id="network-page" class="page hide">
                 <h1>Analyse page</h1>
                 <p>London is the capital city of England. It is the most populous city in the  United Kingdom, with a metropolitan area of over 13 million inhabitants.</p>
                 <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
             </div>
 
-            <div id="default-page" style="display:none;">
+            <div id="default-page" class="page hide">
                 <h1>Default page</h1>
                 <p>London is the capital city of England. It is the most populous city in the  United Kingdom, with a metropolitan area of over 13 million inhabitants.</p>
                 <p>Standing on the River Thames, London has been a major settlement for two millennia, its history going back to its founding by the Romans, who named it Londinium.</p>
+            </div>
+            <div id="error-page" class="page hide">
+                <h1>Error page</h1>
             </div>
         </div>
 
@@ -117,8 +120,8 @@
         <p>Footer</p>
     </footer>
     <script src="js/tileJs.js"></script>
-    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <!--<script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>-->
 </body>
 </html>
 
