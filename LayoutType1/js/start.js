@@ -80,7 +80,8 @@ var callback = function () {
 
     function render(url){
         let temp = url.split('/')[0];
-        console.log("render",temp)
+        temp = (temp === "") ? "#home" : temp;
+        console.log("render", temp);        
 
         var allPages = document.querySelectorAll(".main-content .page.visible");
         if (allPages.length > 0) {
@@ -92,11 +93,18 @@ var callback = function () {
             }
         }
 
-        
-
+        var activMenus = document.querySelectorAll("div.overlay-content > div.appMenuItem.selected");
+        if (activMenus.length > 0) {
+            for (let p = 0; p < activMenus.length; p++) {
+                if (activMenus[p].className.indexOf("selected") > -1) {
+                    activMenus[p].classList.remove("selected");
+                }
+            }
+        }
+               
         var map = {
             //home page
-            '': function () {
+            '#home': function () {
                 renderHomePage();
             },
             //map page
@@ -129,43 +137,75 @@ var callback = function () {
         else {
             renderErrorPage();
         }
+
+        closeNav();
     }
 
     function renderHomePage() {
         var page = document.querySelectorAll("#home-page");
         page[0].classList.remove("hide");
         page[0].classList.add("visible");
+
+        var selectMenu = document.querySelectorAll("div.overlay-content > div.appMenuItem[id=home]");
+        selectMenu[0].classList.add("selected");
+
+        loadJS('js/home_module.js', _cb, document.head);
+        function _cb() {
+            HomeModule.init();
+        }
     }
 
     function renderMapPage() {
         var page = document.querySelectorAll("#map-page");
         page[0].classList.remove("hide");
         page[0].classList.add("visible");
+        var selectMenu = document.querySelectorAll("div.overlay-content > div.appMenuItem[id=map]");
+        selectMenu[0].classList.add("selected");
     }
 
     function renderNetworkPage() {
         var page = document.querySelectorAll("#network-page");
         page[0].classList.remove("hide");
         page[0].classList.add("visible");
+        var selectMenu = document.querySelectorAll("div.overlay-content > div.appMenuItem[id=network]");
+        selectMenu[0].classList.add("selected");
     }
 
     function renderMyAppsPage() {
         var page = document.querySelectorAll("#myapps-page");
         page[0].classList.remove("hide");
         page[0].classList.add("visible");
+        var selectMenu = document.querySelectorAll("div.overlay-content > div.appMenuItem[id=myapps]");
+        selectMenu[0].classList.add("selected");
+
+        loadJS('js/MbusParser.js', _cb, document.head);
+        function _cb() {
+            console.log("MbusParser.js script loaded");
+            MBusParserModule.init();
+        }
     } 
-    
 
     function renderDrawPage() {
         var page = document.querySelectorAll("#drawing-page");
         page[0].classList.remove("hide");
         page[0].classList.add("visible");
+
+        var selectMenu = document.querySelectorAll("div.overlay-content > div.appMenuItem[id=drawing]");
+        selectMenu[0].classList.add("selected");
+
+        loadJS('js/drawing_module.js', _cb, document.head);
+        function _cb() {
+            DrawingModule.init();
+        }
     }
 
     function renderDataCollectPage() {
         var page = document.querySelectorAll("#datacollect-page");
         page[0].classList.remove("hide");
         page[0].classList.add("visible");
+
+        var selectMenu = document.querySelectorAll("div.overlay-content > div.appMenuItem[id=datacollect]");
+        selectMenu[0].classList.add("selected");
     }
 
     function renderErrorPage() {
