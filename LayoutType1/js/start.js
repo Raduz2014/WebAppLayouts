@@ -159,20 +159,10 @@ var callback = function () {
                 }
             },
             'drawing': function () {
-                if (!DrawingModule) {
                     loadJS('js/drawing_module.js', _cb, document.head);
                     function _cb() {
                         DrawingModule.init();
-                    }
-                }
-                else {
-                    if (DrawingModule.isPageInView()) {
-
-                    }
-                    else {
-
-                    }
-                }               
+                    }              
                 return;
             },
             'myapps': function () {
